@@ -38,9 +38,6 @@ Under the hood it uses the official Node.js client library [`googleapis`](https:
 
 Go to the [Google Cloud Console API Library](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) and enable the **Google Search Console API** for your project. If you don't have a project yet, create one first.
 
-You also need to enable the **Search Console API (webmasters v3)** for search analytics queries:
-[Enable Webmasters API](https://console.cloud.google.com/apis/library/webmasters.googleapis.com)
-
 ### Step 2: Create a Service Account
 
 1. Go to [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) in the same project.
