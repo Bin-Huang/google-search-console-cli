@@ -32,47 +32,78 @@ This CLI is a thin wrapper around Google's official APIs:
 
 Under the hood it uses the official Node.js client library [`googleapis`](https://www.npmjs.com/package/googleapis). All API responses are passed through as JSON.
 
-## Authentication
+## Setup
 
-Credentials are resolved in this order:
+### Step 1: Enable the Search Console API
 
-1. **`--credentials <path>` flag** — pass a service account JSON key file directly
-2. **`GOOGLE_APPLICATION_CREDENTIALS` env var** — standard [ADC](https://cloud.google.com/docs/authentication/application-default-credentials) environment variable
-3. **`~/.config/google-search-console-cli/credentials.json`** — default credentials file (auto-detected if present)
-4. **gcloud ADC** — falls back to `~/.config/gcloud/application_default_credentials.json`
+Go to the [Google Cloud Console API Library](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) and enable the **Google Search Console API** for your project. If you don't have a project yet, create one first.
 
-### Service Account setup (recommended for automation)
+You also need to enable the **Search Console API (webmasters v3)** for search analytics queries:
+[Enable Webmasters API](https://console.cloud.google.com/apis/library/webmasters.googleapis.com)
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts), create a Service Account in a project with the **Search Console API** enabled.
-2. Create a JSON key for the Service Account and download it.
-3. Place the key file in one of the locations above:
+### Step 2: Create a Service Account
+
+1. Go to [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) in the same project.
+2. Click **Create Service Account**, give it a name (e.g. `search-console-reader`), and click **Done**.
+3. Click on the newly created Service Account, go to the **Keys** tab.
+4. Click **Add Key > Create new key > JSON**, and download the key file.
+
+### Step 3: Place the credentials file
+
+Choose one of these options:
 
 ```bash
-# Option: use the default path
+# Option A: Default path (recommended)
 mkdir -p ~/.config/google-search-console-cli
-cp service-account-key.json ~/.config/google-search-console-cli/credentials.json
+cp ~/Downloads/your-key-file.json ~/.config/google-search-console-cli/credentials.json
 
-# Option: set the env var
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+# Option B: Environment variable
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your-key-file.json"
 
-# Option: pass per-invocation
-google-search-console-cli sites --credentials /path/to/service-account-key.json
+# Option C: Pass per command
+google-search-console-cli sites --credentials /path/to/your-key-file.json
 ```
 
-4. In [Search Console](https://search.google.com/search-console) → Settings → Users and permissions, add the Service Account email (e.g. `name@project.iam.gserviceaccount.com`) as a user.
+Credentials are resolved in this order:
+1. `--credentials <path>` flag
+2. `GOOGLE_APPLICATION_CREDENTIALS` env var
+3. `~/.config/google-search-console-cli/credentials.json` (auto-detected)
+4. gcloud Application Default Credentials
 
-### gcloud ADC (for local development)
+### Step 4: Grant access in Search Console
+
+The Service Account needs permission to access your sites in Search Console. This must be done **per site**.
+
+1. Open [Google Search Console](https://search.google.com/search-console).
+2. Select a site you want to grant access to.
+3. Go to **Settings** (bottom-left) > **Users and permissions**.
+4. Click **Add user**.
+5. Enter the Service Account email (find it in your key file's `client_email` field, e.g. `my-sa@my-project.iam.gserviceaccount.com`).
+6. Choose a permission level:
+   - **Restricted** (read-only): can use `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`
+   - **Full**: can also use `site-add`, `site-remove`, `sitemap-submit`, `sitemap-delete`
+7. Click **Add**.
+
+Repeat for each site you want to access. There is no global "add to all sites" option in Search Console.
+
+### Alternative: gcloud ADC (for local development)
+
+If you prefer not to use a Service Account, you can authenticate with your own Google account:
 
 ```bash
 gcloud auth application-default login \
   --scopes="https://www.googleapis.com/auth/webmasters.readonly"
 ```
 
+This uses your personal Google account's Search Console access. Good for local development, not recommended for automation.
+
 ## Usage
 
 All commands output pretty-printed JSON by default. Use `--format compact` for compact single-line JSON.
 
-Site URLs follow the Search Console format: `https://www.example.com/` for URL-prefix properties, or `sc-domain:example.com` for Domain properties.
+Site URLs follow the Search Console format:
+- **URL-prefix property**: `https://www.example.com/` (must include trailing slash)
+- **Domain property**: `sc-domain:example.com`
 
 ### query
 
@@ -137,7 +168,7 @@ google-search-console-cli site sc-domain:example.com
 
 ### site-add
 
-Add a site to Search Console.
+Add a site to Search Console. Requires **Full** permission.
 
 ```bash
 google-search-console-cli site-add https://www.example.com/
@@ -145,7 +176,7 @@ google-search-console-cli site-add https://www.example.com/
 
 ### site-remove
 
-Remove a site from Search Console.
+Remove a site from Search Console. Requires **Full** permission.
 
 ```bash
 google-search-console-cli site-remove https://www.example.com/
@@ -169,7 +200,7 @@ google-search-console-cli sitemap https://www.example.com/ https://www.example.c
 
 ### sitemap-submit
 
-Submit a sitemap for a site.
+Submit a sitemap for a site. Requires **Full** permission.
 
 ```bash
 google-search-console-cli sitemap-submit https://www.example.com/ https://www.example.com/sitemap.xml
@@ -177,7 +208,7 @@ google-search-console-cli sitemap-submit https://www.example.com/ https://www.ex
 
 ### sitemap-delete
 
-Delete a sitemap from a site.
+Delete a sitemap from a site. Requires **Full** permission.
 
 ```bash
 google-search-console-cli sitemap-delete https://www.example.com/ https://www.example.com/sitemap.xml
