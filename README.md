@@ -230,6 +230,10 @@ Errors are written to stderr as JSON with an `error` field. For Google API error
 {"error": "Permission denied", "code": 403}
 ```
 
+## Related
+
+- [google-analytics-cli](https://github.com/Bin-Huang/google-analytics-cli) — Google Analytics CLI for AI agents
+
 ## License
 
 Apache-2.0
