@@ -6,11 +6,14 @@ export function registerSitemapsCommands(program: Command): void {
   program
     .command("sitemaps <siteUrl>")
     .description("List sitemaps for a site")
-    .action(async (siteUrl: string, _opts, cmd: Command) => {
+    .option("--sitemap-index <url>", "Only list sitemaps under this sitemap index")
+    .action(async (siteUrl: string, opts, cmd: Command) => {
       const format = cmd.optsWithGlobals().format;
       await run(async () => {
         const client = await createWebmastersClient();
-        const res = await client.sitemaps.list({ siteUrl });
+        const params: Record<string, string> = { siteUrl };
+        if (opts.sitemapIndex) params.sitemapIndex = opts.sitemapIndex;
+        const res = await client.sitemaps.list(params);
         return res.data.sitemap ?? [];
       }, format);
     });
