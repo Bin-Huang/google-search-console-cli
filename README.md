@@ -1,6 +1,6 @@
 # google-search-console-cli
 
-A Google Search Console CLI designed for AI agents. Wraps the official Search Console API with simple, agent-friendly commands.
+Give AI agents direct access to Google Search Console data. One command to query search analytics, inspect URLs, and manage sitemaps -- no SDK, no docs to read, no tokens wasted on boilerplate.
 
 **Works with:** OpenClaw, Claude Code, Cursor, Codex, and any agent that can run shell commands.
 
@@ -25,10 +25,12 @@ pnpm build
 
 ## How it works
 
-This CLI is a thin wrapper around Google's official APIs:
+Built on Google's official APIs. Handles service account authentication and request signing. Every command outputs structured JSON to stdout, ready for agents to parse without extra processing.
 
-- **[Search Console API v1](https://developers.google.com/webmaster-tools/v1/api_reference_index)** — URL inspection (`inspect`)
-- **[Webmasters API v3](https://developers.google.com/webmaster-tools/v1/api_reference_index)** — search analytics, sites, and sitemaps (`query`, `sites`, `sitemaps`)
+Core APIs covered:
+
+- **[Search Console API v1](https://developers.google.com/webmaster-tools/v1/api_reference_index)** -- URL inspection (`inspect`)
+- **[Webmasters API v3](https://developers.google.com/webmaster-tools/v1/api_reference_index)** -- search analytics, sites, and sitemaps (`query`, `sites`, `sitemaps`)
 
 Under the hood it uses the official Node.js client library [`googleapis`](https://www.npmjs.com/package/googleapis). All API responses are passed through as JSON.
 
