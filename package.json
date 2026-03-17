@@ -1,6 +1,6 @@
 {
   "name": "google-search-console-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Google Search Console CLI for AI agents",
   "type": "module",
   "bin": {
