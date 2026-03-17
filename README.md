@@ -243,7 +243,11 @@ Errors are written to stderr as JSON with an `error` field. For Google API error
 
 ## Related
 
-- [google-analytics-cli](https://github.com/Bin-Huang/google-analytics-cli) — Google Analytics CLI for AI agents
+- [google-analytics-cli](https://github.com/Bin-Huang/google-analytics-cli) -- Google Analytics
+- [google-ads-open-cli](https://github.com/Bin-Huang/google-ads-open-cli) -- Google Ads
+- [meta-ads-open-cli](https://github.com/Bin-Huang/meta-ads-open-cli) -- Meta Ads
+- [microsoft-ads-cli](https://github.com/Bin-Huang/microsoft-ads-cli) -- Microsoft Ads
+- [apple-ads-cli](https://github.com/Bin-Huang/apple-ads-cli) -- Apple Ads
 
 ## License
 
