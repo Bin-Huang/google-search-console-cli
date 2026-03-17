@@ -144,9 +144,14 @@ google-search-console-cli query https://www.example.com/ \
   --data-state all
 ```
 
-Available dimensions: `date`, `query`, `page`, `country`, `device`, `searchAppearance`
+Available dimensions: `date`, `query`, `page`, `country`, `device`, `searchAppearance`, `hour`
 
 Available types: `web` (default), `image`, `video`, `news`, `discover`, `googleNews`
+
+Additional options:
+
+- `--aggregation-type <type>` -- Aggregation type: `auto`, `byPage`, `byProperty`, `byNewsShowcasePanel`
+- `--start-row <n>` -- Starting row offset (default 0)
 
 ### sites
 
@@ -187,6 +192,10 @@ List sitemaps for a site.
 
 ```bash
 google-search-console-cli sitemaps https://www.example.com/
+
+# Only list sitemaps under a specific sitemap index
+google-search-console-cli sitemaps https://www.example.com/ \
+  --sitemap-index https://www.example.com/sitemap-index.xml
 ```
 
 ### sitemap
