@@ -1,6 +1,6 @@
 # google-search-console-cli
 
-Give AI agents direct access to Google Search Console data. One command to query search analytics, inspect URLs, and manage sitemaps -- no SDK, no docs to read, no tokens wasted on boilerplate.
+Google Search Console CLI for AI agents (and humans). Analyze search performance by query, page, country, and device, inspect URL index status, manage sitemaps, and more.
 
 **Works with:** OpenClaw, Claude Code, Cursor, Codex, and any agent that can run shell commands.
 
