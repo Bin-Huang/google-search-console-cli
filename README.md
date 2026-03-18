@@ -16,6 +16,14 @@ Or run directly with npx:
 npx google-search-console-cli --help
 ```
 
+### Agent Skill
+
+Install as an agent skill so AI agents (OpenClaw, Claude Code, Cursor, Codex, etc.) automatically use google-search-console-cli for search analytics:
+
+```bash
+npx skills add Bin-Huang/google-search-console-cli
+```
+
 For development:
 
 ```bash
