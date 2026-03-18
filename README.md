@@ -8,21 +8,12 @@ Google Search Console CLI for AI agents (and humans). Analyze search performance
 
 ```bash
 npm install -g google-search-console-cli
-```
 
-Or run directly with npx:
-
-```bash
-npx google-search-console-cli --help
-```
-
-### Agent Skill
-
-Install as an agent skill so AI agents (OpenClaw, Claude Code, Cursor, Codex, etc.) automatically use google-search-console-cli for search analytics:
-
-```bash
+# Add skills for AI agents (Claude Code, Cursor, Codex, etc.)
 npx skills add Bin-Huang/google-search-console-cli
 ```
+
+Or run directly: `npx google-search-console-cli --help`
 
 For development:
 
