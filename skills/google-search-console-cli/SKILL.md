@@ -74,6 +74,7 @@ google-search-console-cli query <siteUrl> --start-date <date> --end-date <date> 
 - `--row-limit <n>` -- Max rows, 1-25000 (default 1000)
 - `--start-row <n>` -- Starting row offset (default 0)
 - `--data-state <state>` -- Data freshness: `all`, `final`, `hourly_all`
+- `--all` -- Fetch all rows with auto-pagination (mutually exclusive with `--start-row`)
 
 **Response fields per row:**
 - `keys` -- Array of dimension values (in the order specified by `--dimensions`)
@@ -81,6 +82,21 @@ google-search-console-cli query <siteUrl> --start-date <date> --end-date <date> 
 - `impressions` -- Number of impressions
 - `ctr` -- Click-through rate (0.0 to 1.0)
 - `position` -- Average position in search results
+
+#### Auto-pagination with --all
+
+When `--all` is specified, the CLI automatically paginates through all results (using 25000 rows per page) and returns the complete dataset. This is useful for exporting all data without manual pagination.
+
+```bash
+# Get ALL queries (auto-paginates through all pages)
+google-search-console-cli query https://www.example.com/ \
+  --start-date 2026-02-16 \
+  --end-date 2026-03-17 \
+  --dimensions query \
+  --all
+```
+
+Note: `--all` and `--start-row` cannot be used together. When `--all` is used, `--row-limit` is ignored.
 
 ### Sites management
 
@@ -120,7 +136,7 @@ google-search-console-cli sitemap-delete <siteUrl> <feedpath>
 ### URL inspection
 
 ```bash
-# Inspect a URL's index status
+# Inspect a single URL's index status
 google-search-console-cli inspect <siteUrl> <inspectionUrl>
 
 # With a specific language for messages
@@ -130,6 +146,31 @@ google-search-console-cli inspect <siteUrl> <inspectionUrl> --language zh-CN
 The `--language` option controls the language of the messages in the response (default: `en-US`).
 
 The response includes: index status (indexing state, crawl time, robots.txt status, canonical URL), AMP analysis (if applicable), mobile usability, and rich results detection.
+
+### Batch URL inspection
+
+Inspect multiple URLs in a single command:
+
+```bash
+# From a file (one URL per line)
+google-search-console-cli inspect-batch https://www.example.com/ --file urls.txt
+
+# From stdin
+cat urls.txt | google-search-console-cli inspect-batch https://www.example.com/
+
+# With compact format (NDJSON, streams results as they complete)
+cat urls.txt | google-search-console-cli inspect-batch https://www.example.com/ --format compact
+```
+
+Options:
+- `--file <path>` -- File with URLs (one per line); reads stdin if omitted
+- `--language <code>` -- Language code for messages (default: `en-US`)
+
+Progress is written to stderr: `Inspecting 1/50: https://...`
+
+With `--format compact`, each result is streamed as NDJSON (one JSON object per line) as soon as it completes. With `--format json` (default), all results are collected and output as a JSON array at the end.
+
+Per-URL errors are captured in the output (with an `error` field) without stopping the batch.
 
 ## Dimension filter groups
 
@@ -346,7 +387,17 @@ google-search-console-cli query https://www.example.com/ \
   --aggregation-type byPage
 ```
 
-### Paginate through large result sets
+### Fetch all rows (auto-pagination)
+
+```bash
+google-search-console-cli query https://www.example.com/ \
+  --start-date 2026-02-16 \
+  --end-date 2026-03-17 \
+  --dimensions query \
+  --all
+```
+
+### Paginate through large result sets (manual)
 
 ```bash
 # First 1000 rows
@@ -378,6 +429,25 @@ google-search-console-cli query https://www.example.com/ \
 
 ```bash
 google-search-console-cli inspect https://www.example.com/ https://www.example.com/important-page
+```
+
+### Batch inspect multiple URLs
+
+```bash
+# Create a file with URLs to inspect
+echo "https://www.example.com/page1
+https://www.example.com/page2
+https://www.example.com/page3" > urls.txt
+
+# Batch inspect
+google-search-console-cli inspect-batch https://www.example.com/ --file urls.txt
+
+# Or pipe from another command
+google-search-console-cli query https://www.example.com/ \
+  --start-date 2026-02-16 --end-date 2026-03-17 \
+  --dimensions page --format compact \
+  | jq -r '.rows[].keys[0]' \
+  | google-search-console-cli inspect-batch https://www.example.com/ --format compact
 ```
 
 ### Audit sitemaps
@@ -417,13 +487,18 @@ google-search-console-cli sitemap https://www.example.com/ https://www.example.c
 
 ### When the user asks about indexing issues
 
-1. Use `inspect` for specific URLs
+1. Use `inspect` for specific URLs, or `inspect-batch` for bulk checking
 2. Check sitemaps with `sitemaps` and `sitemap` commands
 3. Look at the inspection response for crawl errors, indexing blocks, or mobile usability issues
 
+### When the user wants to export all search data
+
+1. Use `query` with `--all` to auto-paginate through all results
+2. Use `--format compact` for NDJSON output suitable for piping to `jq` or other tools
+
 ## Permission levels
 
-- **Read-only (Restricted)**: `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`
+- **Read-only (Restricted)**: `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`, `inspect-batch`
 - **Write (Full)**: `site-add`, `site-remove`, `sitemap-submit`, `sitemap-delete`
 
 Most analysis workflows only need read-only permission.

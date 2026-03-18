@@ -6,6 +6,7 @@ import { registerSitesCommands } from "./commands/sites.js";
 import { registerSitemapsCommands } from "./commands/sitemaps.js";
 import { registerQueryCommands } from "./commands/query.js";
 import { registerInspectCommands } from "./commands/inspect.js";
+import { registerInspectBatchCommands } from "./commands/inspect-batch.js";
 
 async function main() {
   const program = new Command();
@@ -47,6 +48,7 @@ async function main() {
   registerSitesCommands(program);
   registerSitemapsCommands(program);
   registerInspectCommands(program);
+  registerInspectBatchCommands(program);
 
   // No args: show help and exit cleanly
   if (process.argv.length <= 2) {
