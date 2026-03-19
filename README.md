@@ -78,7 +78,7 @@ The Service Account needs permission to access your sites in Search Console. Thi
 4. Click **Add user**.
 5. Enter the Service Account email (find it in your key file's `client_email` field, e.g. `my-sa@my-project.iam.gserviceaccount.com`).
 6. Choose a permission level:
-   - **Restricted** (read-only): can use `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`
+   - **Restricted** (read-only): can use `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`, `inspect-batch`
    - **Full**: can also use `site-add`, `site-remove`, `sitemap-submit`, `sitemap-delete`
 7. Click **Add**.
 
@@ -149,8 +149,11 @@ Available types: `web` (default), `image`, `video`, `news`, `discover`, `googleN
 
 Additional options:
 
-- `--aggregation-type <type>` -- Aggregation type: `auto`, `byPage`, `byProperty`, `byNewsShowcasePanel`
+- `--row-limit <n>` -- Max rows, 1-25000 (default 1000)
 - `--start-row <n>` -- Starting row offset (default 0)
+- `--data-state <state>` -- Data freshness: `all`, `final`, `hourly_all`
+- `--aggregation-type <type>` -- Aggregation type: `auto`, `byPage`, `byProperty`, `byNewsShowcasePanel`
+- `--all` -- Fetch all rows with auto-pagination (mutually exclusive with `--start-row`)
 
 ### sites
 
@@ -231,6 +234,27 @@ google-search-console-cli inspect https://www.example.com/ https://www.example.c
 # With a specific language for messages
 google-search-console-cli inspect https://www.example.com/ https://www.example.com/my-page --language zh-CN
 ```
+
+### inspect-batch
+
+Batch inspect multiple URLs' index status in a single command.
+
+```bash
+# From a file (one URL per line)
+google-search-console-cli inspect-batch https://www.example.com/ --file urls.txt
+
+# From stdin
+cat urls.txt | google-search-console-cli inspect-batch https://www.example.com/
+
+# With compact format (NDJSON, streams results as they complete)
+cat urls.txt | google-search-console-cli inspect-batch https://www.example.com/ --format compact
+```
+
+Options:
+- `--file <path>` -- File with URLs (one per line); reads stdin if omitted
+- `--language <code>` -- Language code for messages (default: `en-US`)
+
+Progress is written to stderr. With `--format compact`, each result is streamed as NDJSON (one JSON object per line) as it completes. With the default format, all results are collected and output as a JSON array. Per-URL errors are captured in the output without stopping the batch.
 
 ## Error output
 
