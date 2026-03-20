@@ -8,7 +8,7 @@ Google Search Console CLI for AI agents (and humans). Analyze search performance
 
 Tell your AI agent (e.g. OpenClaw):
 
-> Install the CLI and skills from https://github.com/Bin-Huang/google-search-console-cli
+> Install this CLI and skills from https://github.com/Bin-Huang/google-search-console-cli
 
 Or install manually:
 
