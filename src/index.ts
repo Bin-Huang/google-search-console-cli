@@ -13,7 +13,7 @@ async function main() {
 
   program
     .name("google-search-console-cli")
-    .description("Google Search Console CLI for AI agents")
+    .description("Google Search Console CLI & Skills for AI agents")
     .addHelpText("after", "\nDocs: https://github.com/Bin-Huang/google-search-console-cli")
     .version(version)
     .option(

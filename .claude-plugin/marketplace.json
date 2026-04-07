@@ -4,7 +4,7 @@
     "name": "Benn Huang"
   },
   "metadata": {
-    "description": "Google Search Console CLI for AI agents, built on the official Search Console and Webmasters APIs",
+    "description": "Google Search Console CLI & Skills for AI agents, built on the official Search Console and Webmasters APIs",
     "version": "0.1.0"
   },
   "plugins": [
