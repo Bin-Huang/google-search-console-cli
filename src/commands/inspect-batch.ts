@@ -36,6 +36,7 @@ export function registerInspectBatchCommands(program: Command): void {
 
       const client = await createSearchConsoleClient();
       const results: unknown[] = [];
+      let failed = 0;
 
       for (let i = 0; i < urls.length; i++) {
         const url = urls[i];
@@ -55,8 +56,10 @@ export function registerInspectBatchCommands(program: Command): void {
             results.push(result);
           }
         } catch (err: unknown) {
+          failed++;
           const message = err instanceof Error ? err.message : String(err);
-          const result = { url, error: message };
+          const code = err instanceof Error ? (err as Error & { code?: number | string }).code : undefined;
+          const result = { url, error: message, ...(code != null && { code }) };
           if (format === "compact") {
             process.stdout.write(JSON.stringify(result) + "\n");
           } else {
@@ -67,6 +70,10 @@ export function registerInspectBatchCommands(program: Command): void {
 
       if (format !== "compact") {
         outputJson(results, format);
+      }
+
+      if (failed > 0) {
+        errorJson(`${failed} of ${urls.length} URLs failed inspection.`);
       }
     });
 }
