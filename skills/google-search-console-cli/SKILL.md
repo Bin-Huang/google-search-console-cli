@@ -170,7 +170,7 @@ Progress is written to stderr: `Inspecting 1/50: https://...`
 
 With `--format compact`, each result is streamed as NDJSON (one JSON object per line) as soon as it completes. With `--format json` (default), all results are collected and output as a JSON array at the end.
 
-Per-URL errors are captured in the output (with an `error` field) without stopping the batch.
+Per-URL errors are captured in the output (with an `error` field and, when available, a `code` field such as `403` or `429`) without stopping the batch. If any URL fails, the command still prints all results, then writes `{"error": "N of M URLs failed inspection."}` to stderr and exits with code 1. Check the per-URL `error` fields to see which URLs failed.
 
 ## Dimension filter groups
 

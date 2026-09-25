@@ -260,7 +260,7 @@ Options:
 - `--file <path>` -- File with URLs (one per line); reads stdin if omitted
 - `--language <code>` -- Language code for messages (default: `en-US`)
 
-Progress is written to stderr. With `--format compact`, each result is streamed as NDJSON (one JSON object per line) as it completes. With the default format, all results are collected and output as a JSON array. Per-URL errors are captured in the output without stopping the batch.
+Progress is written to stderr. With `--format compact`, each result is streamed as NDJSON (one JSON object per line) as it completes. With the default format, all results are collected and output as a JSON array. Per-URL errors are captured in the output (with `error` and, when available, `code`) without stopping the batch. If any URL fails, the command still prints all results, then writes a summary error to stderr and exits with code 1.
 
 ## Error output
 
