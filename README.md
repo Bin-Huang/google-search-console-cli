@@ -90,14 +90,26 @@ The Service Account needs permission to access your sites in Search Console. Thi
 
 Repeat for each site you want to access. There is no global "add to all sites" option in Search Console.
 
+**Troubleshooting "Email not found":**
+- Paste the `client_email` value (it ends in `.iam.gserviceaccount.com`), not `client_id` or an OAuth client ID.
+- Make sure the Service Account is enabled in the Cloud Console.
+- A newly created Service Account can take a few minutes before Search Console accepts it. Wait, then try again.
+- Choose **Full** or **Restricted**. Do not choose **Owner**.
+- If it still fails, use your own Google account instead (see below).
+
 ### Alternative: gcloud ADC (for local development)
 
 If you prefer not to use a Service Account, you can authenticate with your own Google account:
 
 ```bash
 gcloud auth application-default login \
-  --scopes="https://www.googleapis.com/auth/webmasters.readonly"
+  --scopes="https://www.googleapis.com/auth/webmasters.readonly,https://www.googleapis.com/auth/cloud-platform"
+
+# Bill API usage to the project where you enabled the Search Console API (Step 1)
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 ```
+
+gcloud requires the `cloud-platform` scope. For write commands (`site-add`, `sitemap-submit`, etc.), use `https://www.googleapis.com/auth/webmasters` instead of `webmasters.readonly`. The CLI uses these credentials only when no key file is found (see the resolution order in Step 3), so remove or rename `~/.config/google-search-console-cli/credentials.json` if it exists.
 
 This uses your personal Google account's Search Console access. Good for local development, not recommended for automation.
 
