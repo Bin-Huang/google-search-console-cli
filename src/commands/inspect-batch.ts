@@ -73,7 +73,11 @@ export function registerInspectBatchCommands(program: Command): void {
       }
 
       if (failed > 0) {
-        errorJson(`${failed} of ${urls.length} URLs failed inspection.`);
+        // Do not call process.exit() here: it can cut off stdout that is still being written to a pipe.
+        process.stderr.write(
+          JSON.stringify({ error: `${failed} of ${urls.length} URLs could not be inspected.` }) + "\n",
+        );
+        process.exitCode = 1;
       }
     });
 }
