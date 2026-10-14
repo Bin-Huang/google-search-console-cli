@@ -109,7 +109,9 @@ gcloud auth application-default login \
 gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 ```
 
-gcloud requires the `cloud-platform` scope. For write commands (`site-add`, `sitemap-submit`, etc.), use `https://www.googleapis.com/auth/webmasters` instead of `webmasters.readonly`. The CLI uses these credentials only when no key file is found (see the resolution order in Step 3), so remove or rename `~/.config/google-search-console-cli/credentials.json` if it exists.
+gcloud requires the `cloud-platform` scope. For write commands (`site-add`, `sitemap-submit`, etc.), use `https://www.googleapis.com/auth/webmasters` instead of `webmasters.readonly`. The CLI uses these credentials only when no key file is found (see the resolution order in Step 3), so unset `GOOGLE_APPLICATION_CREDENTIALS` and remove or rename `~/.config/google-search-console-cli/credentials.json` if it exists.
+
+If Google shows "This app is blocked" during login, gcloud's default OAuth client is not allowed to request the Search Console scope. Create your own OAuth client (Desktop app) in the Cloud Console, download its JSON, and add `--client-id-file=/path/to/client_secret.json` to the login command.
 
 This uses your personal Google account's Search Console access. Good for local development, not recommended for automation.
 
