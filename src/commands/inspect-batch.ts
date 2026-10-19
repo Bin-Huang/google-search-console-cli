@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { Command } from "commander";
 import { createSearchConsoleClient } from "../auth.js";
-import { errorJson, outputJson } from "../utils.js";
+import { errorJson, outputJson, withCredentialsHint } from "../utils.js";
 
 function readLines(source: string | undefined): string[] {
   const text = source
@@ -57,7 +57,7 @@ export function registerInspectBatchCommands(program: Command): void {
           }
         } catch (err: unknown) {
           failed++;
-          const message = err instanceof Error ? err.message : String(err);
+          const message = withCredentialsHint(err instanceof Error ? err.message : String(err));
           const code = err instanceof Error ? (err as Error & { code?: number | string }).code : undefined;
           const result = { url, error: message, ...(code != null && { code }) };
           if (format === "compact") {

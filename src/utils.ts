@@ -9,8 +9,21 @@ interface ApiError extends Error {
   errors?: unknown;
 }
 
+// googleauth says "Could not load the default credentials" when no key file
+// and no gcloud ADC are found. Tell the user where the CLI looks for a key.
+export function withCredentialsHint(message: string): string {
+  if (!message.includes("Could not load the default credentials")) return message;
+  return (
+    "No credentials found. Provide a service account JSON key in one of these ways: " +
+    "(1) pass --credentials <path>, " +
+    "(2) set GOOGLE_APPLICATION_CREDENTIALS=<path>, " +
+    "(3) save it as ~/.config/google-search-console-cli/credentials.json. " +
+    "See https://github.com/Bin-Huang/google-search-console-cli#setup"
+  );
+}
+
 export function errorJson(message: string, err?: unknown): never {
-  const output: Record<string, unknown> = { error: message };
+  const output: Record<string, unknown> = { error: withCredentialsHint(message) };
   if (err && typeof err === "object") {
     const apiErr = err as ApiError;
     if (apiErr.code != null) output.code = apiErr.code;
