@@ -166,6 +166,7 @@ Notes:
 | 403 "User does not have sufficient permission for site". With `inspect`: 403 "You do not own this site, or the inspected URL is not part of this property". With `site`: 404 "is not a verified Search Console site in this account" | The credentials have no access to this property, or only **Restricted** access for a write command. | Add the account to the property ([Step 4](#step-4-grant-access-in-search-console)). Use **Full** for write commands. Check that the site URL matches the property exactly, e.g. `https://www.example.com/` or `sc-domain:example.com`. |
 | Google shows "This app is blocked" during `gcloud auth application-default login` | gcloud's own OAuth client cannot request the Search Console scope. | Create your own OAuth client and add `--client-id-file` ([Application Default Credentials](#alternative-application-default-credentials)). |
 | Application Default Credentials stop working after 7 days (`invalid_grant`) | The OAuth app uses the **External** audience and is in **Testing** status. Google expires its refresh tokens after 7 days. | Run `gcloud auth application-default login` again with the same flags. |
+| A service account key fails with `invalid_grant: ...`, e.g. `invalid_grant: Invalid grant: account not found` | The key or the service account was deleted or disabled. | Create a new key ([Step 2](#step-2-create-a-service-account-and-download-a-json-key)) and replace the old key file. If you deleted the service account, create a new one and repeat [Step 4](#step-4-grant-access-in-search-console). |
 
 ## Usage
 

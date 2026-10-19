@@ -55,8 +55,19 @@ test("withCredentialsHint explains where to put credentials", () => {
   assert.match(message, /#setup/);
 });
 
+test("withCredentialsHint explains invalid_grant for ADC and service account keys", () => {
+  for (const original of ["invalid_grant", "invalid_grant: Invalid grant: account not found"]) {
+    const message = withCredentialsHint(original);
+    assert.ok(message.startsWith(`${original}. Google rejected the credentials.`));
+    assert.match(message, /gcloud auth application-default login/);
+    assert.match(message, /create a new key/);
+    assert.match(message, /#troubleshooting$/);
+  }
+});
+
 test("withCredentialsHint keeps other messages", () => {
   assert.equal(withCredentialsHint("Permission denied"), "Permission denied");
+  assert.equal(withCredentialsHint("Request had invalid_grant"), "Request had invalid_grant");
 });
 
 test("assertNotOAuthClientFile rejects installed and web client files", () => {

@@ -531,6 +531,7 @@ Most analysis workflows only need read-only permission.
 | 403 "User does not have sufficient permission for site". With `inspect`: 403 "You do not own this site, ...". With `site`: 404 "is not a verified Search Console site in this account" | No access to this property, or **Restricted** access for a write command. | Add the account to the property with the right level. Check that the site URL matches the property exactly. |
 | "This app is blocked" during gcloud login | gcloud's own OAuth client cannot request the Search Console scope. | Add `--client-id-file` with the user's own OAuth client. |
 | Application Default Credentials fail after 7 days (`invalid_grant`) | OAuth app with the External audience in **Testing** status. | Run the gcloud login command again. |
+| Service account key fails with `invalid_grant: ...` (e.g. `account not found`) | The key or the service account was deleted or disabled. | Create a new key and replace the key file. A new service account also needs setup step 4 again. |
 | Empty `query` results | Data is usually available 2-3 days after the date, or the site URL format does not match the property. | Move the date range back, and use the exact property URL. |
 | 400 Bad request | Invalid dimension filter JSON or incompatible fields. | Check the `--dimension-filter` syntax and field compatibility. |
 
