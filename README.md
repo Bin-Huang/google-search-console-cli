@@ -21,6 +21,13 @@ npx skills add Bin-Huang/google-search-console-cli
 
 Or run directly: `npx google-search-console-cli --help`
 
+In Claude Code, you can also install the skills as a plugin:
+
+```
+/plugin marketplace add Bin-Huang/google-search-console-cli
+/plugin install google-search-console-cli@google-search-console-cli
+```
+
 For development:
 
 ```bash
@@ -41,18 +48,31 @@ Under the hood it uses the official Node.js client library [`googleapis`](https:
 
 ## Setup
 
-### Step 1: Enable the Search Console API
+### Step 1: Choose a project and enable the API
 
-Go to the [Google Cloud Console API Library](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) and enable the **Google Search Console API** for your project. If you don't have a project yet, create one first.
+1. Open the [Google Cloud Console](https://console.cloud.google.com/) and select a project. If you do not have a project, create one.
+2. Open the [Search Console API page](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) in the API Library and click **Enable**.
 
-### Step 2: Create a Service Account
+### Step 2: Create a service account and download a JSON key
 
 1. Go to [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) in the same project.
 2. Click **Create Service Account**, give it a name (e.g. `search-console-reader`), and click **Done**.
-3. Click on the newly created Service Account, go to the **Keys** tab.
-4. Click **Add Key > Create new key > JSON**, and download the key file.
+3. Click the new service account and open the **Keys** tab.
+4. Click **Add Key > Create new key > JSON**. The browser downloads the key file.
+
+> [!NOTE]
+> **Key creation blocked?** Your organization can block service account key creation with the `constraints/iam.managed.disableServiceAccountKeyCreation` policy. Organizations created on or after May 3, 2024 enforce this policy by default. See [Secure-by-default organizations](https://docs.cloud.google.com/resource-manager/docs/secure-by-default-organizations) and [Create and delete service account keys](https://cloud.google.com/iam/docs/keys-create-delete).
+>
+> To fix this, ask your organization admin to override the policy for this project. Or use [Application Default Credentials](#alternative-application-default-credentials) instead of a key.
 
 ### Step 3: Place the credentials file
+
+The CLI looks for credentials in this order and uses the first one it finds:
+
+1. `--credentials <path>` flag
+2. `GOOGLE_APPLICATION_CREDENTIALS` env var
+3. `~/.config/google-search-console-cli/credentials.json` (default path)
+4. gcloud Application Default Credentials (see [below](#alternative-application-default-credentials))
 
 Choose one of these options:
 
@@ -68,52 +88,85 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your-key-file.json"
 google-search-console-cli sites --credentials /path/to/your-key-file.json
 ```
 
-Credentials are resolved in this order:
-1. `--credentials <path>` flag
-2. `GOOGLE_APPLICATION_CREDENTIALS` env var
-3. `~/.config/google-search-console-cli/credentials.json` (auto-detected)
-4. gcloud Application Default Credentials
-
 ### Step 4: Grant access in Search Console
 
-The Service Account needs permission to access your sites in Search Console. This must be done **per site**.
+The service account needs permission on each Search Console property. You must be an **Owner** of a property to add users to it ([Google help](https://support.google.com/webmasters/answer/7687615)).
 
 1. Open [Google Search Console](https://search.google.com/search-console).
-2. Select a site you want to grant access to.
+2. Select the property.
 3. Go to **Settings** (bottom-left) > **Users and permissions**.
 4. Click **Add user**.
-5. Enter the Service Account email (find it in your key file's `client_email` field, e.g. `my-sa@my-project.iam.gserviceaccount.com`).
-6. Choose a permission level:
+5. Enter the service account email. Copy it from the `client_email` field in your key file, e.g. `my-sa@my-project.iam.gserviceaccount.com`.
+6. Choose a permission level. Do not choose **Owner**.
    - **Restricted** (read-only): can use `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`, `inspect-batch`
    - **Full**: can also use `site-add`, `site-remove`, `sitemap-submit`, `sitemap-delete`
 7. Click **Add**.
 
-Repeat for each site you want to access. There is no global "add to all sites" option in Search Console.
+Repeat for each property. Search Console has no option to add a user to all properties at once.
 
-**Troubleshooting "Email not found":**
-- Paste the `client_email` value (it ends in `.iam.gserviceaccount.com`), not `client_id` or an OAuth client ID.
-- Make sure the Service Account is enabled in the Cloud Console.
-- A newly created Service Account can take a few minutes before Search Console accepts it. Wait, then try again.
-- Choose **Full** or **Restricted**. Do not choose **Owner**.
-- If it still fails, use your own Google account instead (see below).
+If Search Console shows "Email not found", see [Troubleshooting](#troubleshooting).
 
-### Alternative: gcloud ADC (for local development)
-
-If you prefer not to use a Service Account, you can authenticate with your own Google account:
+### Step 5: Verify the setup
 
 ```bash
-gcloud auth application-default login \
-  --scopes="https://www.googleapis.com/auth/webmasters.readonly,https://www.googleapis.com/auth/cloud-platform"
-
-# Bill API usage to the project where you enabled the Search Console API (Step 1)
-gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+google-search-console-cli sites
 ```
 
-gcloud requires the `cloud-platform` scope. For write commands (`site-add`, `sitemap-submit`, etc.), use `https://www.googleapis.com/auth/webmasters` instead of `webmasters.readonly`. The CLI uses these credentials only when no key file is found (see the resolution order in Step 3), so unset `GOOGLE_APPLICATION_CREDENTIALS` and remove or rename `~/.config/google-search-console-cli/credentials.json` if it exists.
+The command prints the properties that the credentials can access. If it prints `[]`, the access from Step 4 is not active yet. The CLI also writes a warning to stderr in this case. See [Troubleshooting](#troubleshooting).
 
-If Google shows "This app is blocked" during login, gcloud's default OAuth client is not allowed to request the Search Console scope. Create your own OAuth client (Desktop app) in the Cloud Console, download its JSON, and add `--client-id-file=/path/to/client_secret.json` to the login command.
+## Alternative: Application Default Credentials
 
-This uses your personal Google account's Search Console access. Good for local development, not recommended for automation.
+Use this method to sign in with your own Google account instead of a service account. Use it when Search Console does not accept the service account email, or when your organization blocks key creation. The CLI then has the same Search Console access as your Google account.
+
+Before you start:
+
+- Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install).
+- In the project from Step 1, configure the [OAuth consent screen](https://console.cloud.google.com/auth/branding). If you are not in a Google Workspace organization, choose the **External** audience.
+- With the **External** audience, add your own Google account as a test user on the [Audience](https://console.cloud.google.com/auth/audience) page.
+
+Steps:
+
+1. Go to [Google Auth Platform > Clients](https://console.cloud.google.com/auth/clients) and click **Create client**.
+2. Choose the application type **Desktop app**, then click **Create**.
+3. Download the client JSON file, e.g. as `client_secret.json`. This file is not a service account key. Do not pass it to `--credentials`.
+4. Sign in with your own OAuth client:
+
+   ```bash
+   gcloud auth application-default login \
+     --client-id-file=/path/to/client_secret.json \
+     --scopes="https://www.googleapis.com/auth/webmasters.readonly,https://www.googleapis.com/auth/cloud-platform"
+   ```
+
+5. Bill API usage to the project from Step 1:
+
+   ```bash
+   gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+   ```
+
+6. Run `google-search-console-cli sites` to verify.
+
+Notes:
+
+- gcloud requires the `cloud-platform` scope. For write commands (`site-add`, `sitemap-submit`, etc.), use `https://www.googleapis.com/auth/webmasters` instead of `webmasters.readonly`.
+- Without `--client-id-file`, gcloud uses its own OAuth client. Google usually blocks that client for the Search Console scope and shows "This app is blocked".
+- The CLI uses Application Default Credentials only when it finds no key file (see the order in Step 3). Unset `GOOGLE_APPLICATION_CREDENTIALS`, and remove or rename `~/.config/google-search-console-cli/credentials.json` if it exists.
+- While the OAuth app uses the **External** audience and its publishing status is **Testing**, Google expires the refresh token after 7 days ([Google docs](https://developers.google.com/identity/protocols/oauth2)). Run the login command again every 7 days.
+- This method is good for local development. For automation, use a service account.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Search Console shows "Email not found" when you add the service account | You entered a different value, such as `client_id` or an OAuth client ID. | Enter the `client_email` value from the key file. It ends in `.iam.gserviceaccount.com`. Make sure the service account is enabled in the Cloud Console. |
+| Search Console shows "Email not found" for the correct `client_email` | This is a known Google-side problem. Search Console can reject a new service account for several hours to several weeks ([forum thread](https://discuss.google.dev/t/problem-with-new-service-accounts/362176)). The CLI cannot fix it. | Try again later. To start now, use [Application Default Credentials](#alternative-application-default-credentials). |
+| `sites` prints `[]` (stderr has a `warning`) | The credentials work, but they have no access to any property yet. | Do [Step 4](#step-4-grant-access-in-search-console) for each property. Check that you added the same `client_email` that is in your key file. With Application Default Credentials, check that your Google account has access to the property. |
+| `{"error": "No credentials found. ..."}` | The CLI found no key file and no Application Default Credentials. | Place the key file as described in [Step 3](#step-3-place-the-credentials-file). |
+| `... is an OAuth client file, not a service account key` | The credentials file is an OAuth client file. It has an `installed` or `web` field. | Download a service account key from the **Keys** tab ([Step 2](#step-2-create-a-service-account-and-download-a-json-key)). Or use the OAuth client file with `gcloud --client-id-file` ([Application Default Credentials](#alternative-application-default-credentials)). |
+| 403 with `SERVICE_DISABLED` or "has not been used in project" | The Search Console API is not enabled in the project of the credentials (or the quota project for Application Default Credentials). | [Enable the API](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) in that project. Wait a few minutes, then try again. |
+| 403 "User does not have sufficient permission for site". With `inspect`: 403 "You do not own this site, or the inspected URL is not part of this property". With `site`: 404 "is not a verified Search Console site in this account" | The credentials have no access to this property, or only **Restricted** access for a write command. | Add the account to the property ([Step 4](#step-4-grant-access-in-search-console)). Use **Full** for write commands. Check that the site URL matches the property exactly, e.g. `https://www.example.com/` or `sc-domain:example.com`. |
+| Google shows "This app is blocked" during `gcloud auth application-default login` | gcloud's own OAuth client cannot request the Search Console scope. | Create your own OAuth client and add `--client-id-file` ([Application Default Credentials](#alternative-application-default-credentials)). |
+| Application Default Credentials stop working after 7 days (`invalid_grant`) | The OAuth app uses the **External** audience and is in **Testing** status. Google expires its refresh tokens after 7 days. | Run `gcloud auth application-default login` again with the same flags. |
+| A service account key fails with `invalid_grant: ...`, e.g. `invalid_grant: Invalid grant: account not found` | The key or the service account was deleted or disabled. | Create a new key ([Step 2](#step-2-create-a-service-account-and-download-a-json-key)) and replace the old key file. If you deleted the service account, create a new one and repeat [Step 4](#step-4-grant-access-in-search-console). |
 
 ## Usage
 
@@ -194,7 +247,7 @@ google-search-console-cli site sc-domain:example.com
 
 ### site-add
 
-Add a site to Search Console. Requires **Full** permission.
+Add a site to the Search Console account of the credentials. The site stays unverified after you add it, so the CLI gets no data for it. To get data, verify ownership in Search Console, or ask an owner to add the account as a user ([Step 4](#step-4-grant-access-in-search-console)).
 
 ```bash
 google-search-console-cli site-add https://www.example.com/
@@ -283,6 +336,8 @@ Errors are written to stderr as JSON with an `error` field. For Google API error
 ```json
 {"error": "Permission denied", "code": 403}
 ```
+
+Warnings are written to stderr as JSON with a `warning` field. They do not change stdout or the exit code. For example, `sites` writes a warning when it finds no sites.
 
 ## Related
 

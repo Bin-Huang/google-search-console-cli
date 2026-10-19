@@ -22,51 +22,61 @@ export function setCredentialsPath(p: string): void {
   credentialsPath = p;
 }
 
-async function getAuthClient() {
-  const keyFile = credentialsPath
+function resolveKeyFile(): string | undefined {
+  return credentialsPath
     ?? (
       !process.env.GOOGLE_APPLICATION_CREDENTIALS &&
       fs.existsSync(DEFAULT_CREDENTIALS_PATH)
         ? DEFAULT_CREDENTIALS_PATH
         : undefined
     );
-
-  const auth = new google.auth.GoogleAuth({
-    keyFile,
-    scopes: ["https://www.googleapis.com/auth/webmasters.readonly"],
-  });
-
-  return auth;
 }
 
-async function getWriteAuthClient() {
-  const keyFile = credentialsPath
-    ?? (
-      !process.env.GOOGLE_APPLICATION_CREDENTIALS &&
-      fs.existsSync(DEFAULT_CREDENTIALS_PATH)
-        ? DEFAULT_CREDENTIALS_PATH
-        : undefined
+// OAuth client files (from "Create OAuth client ID") have a top-level
+// "installed" or "web" field. googleauth only reports a missing client_email
+// for them, so detect them here and say what the file is.
+export function assertNotOAuthClientFile(file: string | undefined): void {
+  if (!file || !fs.existsSync(file)) return;
+  let json: unknown;
+  try {
+    json = JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch {
+    return;
+  }
+  if (json && typeof json === "object" && ("installed" in json || "web" in json)) {
+    throw new Error(
+      `${file} is an OAuth client file, not a service account key. ` +
+      "Download a JSON key from the service account's Keys tab, " +
+      "or use this file with gcloud --client-id-file. " +
+      "See https://github.com/Bin-Huang/google-search-console-cli#alternative-application-default-credentials",
     );
-
-  const auth = new google.auth.GoogleAuth({
-    keyFile,
-    scopes: ["https://www.googleapis.com/auth/webmasters"],
-  });
-
-  return auth;
+  }
 }
+
+function getAuthClient(scope: string) {
+  const keyFile = resolveKeyFile();
+  assertNotOAuthClientFile(keyFile ?? process.env.GOOGLE_APPLICATION_CREDENTIALS);
+
+  return new google.auth.GoogleAuth({
+    keyFile,
+    scopes: [scope],
+  });
+}
+
+const READ_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
+const WRITE_SCOPE = "https://www.googleapis.com/auth/webmasters";
 
 export async function createSearchConsoleClient() {
-  const auth = await getAuthClient();
+  const auth = getAuthClient(READ_SCOPE);
   return google.searchconsole({ version: "v1", auth });
 }
 
 export async function createWebmastersClient() {
-  const auth = await getAuthClient();
+  const auth = getAuthClient(READ_SCOPE);
   return google.webmasters({ version: "v3", auth });
 }
 
 export async function createWriteWebmastersClient() {
-  const auth = await getWriteAuthClient();
+  const auth = getAuthClient(WRITE_SCOPE);
   return google.webmasters({ version: "v3", auth });
 }

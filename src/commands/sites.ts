@@ -2,6 +2,18 @@ import { Command } from "commander";
 import { createWebmastersClient, createWriteWebmastersClient } from "../auth.js";
 import { run } from "../utils.js";
 
+// An empty list is a valid result, so stdout still gets [] and the exit code
+// stays 0. The warning goes to stderr for humans and agents.
+export function warnIfNoSites(sites: unknown[]): void {
+  if (sites.length > 0) return;
+  const warning =
+    "No sites found. These credentials have no access to any Search Console property yet. " +
+    "Add the service account email (client_email in the key file) as a user on each property, " +
+    "or wait if you added it recently. " +
+    "See https://github.com/Bin-Huang/google-search-console-cli#step-4-grant-access-in-search-console";
+  process.stderr.write(JSON.stringify({ warning }) + "\n");
+}
+
 export function registerSitesCommands(program: Command): void {
   program
     .command("sites")
@@ -11,7 +23,9 @@ export function registerSitesCommands(program: Command): void {
       await run(async () => {
         const client = await createWebmastersClient();
         const res = await client.sites.list();
-        return res.data.siteEntry ?? [];
+        const sites = res.data.siteEntry ?? [];
+        warnIfNoSites(sites);
+        return sites;
       }, format);
     });
 
