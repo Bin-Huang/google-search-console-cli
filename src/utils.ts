@@ -25,7 +25,7 @@ export function withCredentialsHint(message: string): string {
   // expired gcloud login, "invalid_grant: ..." for a bad service account key.
   if (message.startsWith("invalid_grant")) {
     return (
-      `${message}. Google rejected the credentials. ` +
+      `${message.replace(/\.$/, "")}. Google rejected the credentials. ` +
       "With gcloud Application Default Credentials, the login expired or was revoked: " +
       "run gcloud auth application-default login again with the same flags. " +
       "With a service account key, the key or the service account may be deleted or disabled: " +

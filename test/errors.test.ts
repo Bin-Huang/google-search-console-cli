@@ -56,9 +56,9 @@ test("withCredentialsHint explains where to put credentials", () => {
 });
 
 test("withCredentialsHint explains invalid_grant for ADC and service account keys", () => {
-  for (const original of ["invalid_grant", "invalid_grant: Invalid grant: account not found"]) {
+  for (const original of ["invalid_grant", "invalid_grant: Invalid grant: account not found", "invalid_grant: Invalid JWT Signature."]) {
     const message = withCredentialsHint(original);
-    assert.ok(message.startsWith(`${original}. Google rejected the credentials.`));
+    assert.ok(message.startsWith(`${original.replace(/\.$/, "")}. Google rejected the credentials.`), message);
     assert.match(message, /gcloud auth application-default login/);
     assert.match(message, /create a new key/);
     assert.match(message, /#troubleshooting$/);
