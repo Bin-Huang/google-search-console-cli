@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { assertNotOAuthClientFile } from "../src/auth.js";
 import { warnIfNoSites } from "../src/commands/sites.js";
 import { withCredentialsHint } from "../src/utils.js";
@@ -12,6 +14,20 @@ function writeTempJson(data: unknown): string {
   const file = path.join(dir, "credentials.json");
   fs.writeFileSync(file, JSON.stringify(data));
   return file;
+}
+
+// Run the CLI with an empty HOME and no credentials in the environment.
+// METADATA_SERVER_DETECTION=none skips the GCE metadata probe.
+function runCli(args: string[], env: Record<string, string> = {}) {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "gsc-cli-home-"));
+  return spawnSync(
+    process.execPath,
+    ["--import", "tsx", fileURLToPath(new URL("../src/index.ts", import.meta.url)), ...args],
+    {
+      encoding: "utf-8",
+      env: { PATH: process.env.PATH ?? "", HOME: home, METADATA_SERVER_DETECTION: "none", ...env },
+    },
+  );
 }
 
 function captureStderr(fn: () => void): string {
@@ -57,7 +73,26 @@ test("assertNotOAuthClientFile accepts service account keys and missing files", 
   assert.doesNotThrow(() => assertNotOAuthClientFile(path.join(os.tmpdir(), "does-not-exist.json")));
 });
 
-test("warnIfNoSites writes a hint to stderr only for an empty list", () => {
-  assert.match(captureStderr(() => warnIfNoSites([])), /No sites found\..*#step-4-grant-access-in-search-console/);
+test("warnIfNoSites writes a JSON warning to stderr only for an empty list", () => {
+  const { warning } = JSON.parse(captureStderr(() => warnIfNoSites([])));
+  assert.match(warning, /^No sites found\..*#step-4-grant-access-in-search-console$/);
   assert.equal(captureStderr(() => warnIfNoSites([{ siteUrl: "sc-domain:example.com" }])), "");
+});
+
+test("CLI without credentials explains where to put them", () => {
+  const res = runCli(["sites"]);
+  assert.equal(res.status, 1);
+  assert.equal(res.stdout, "");
+  assert.match(JSON.parse(res.stderr.trim().split("\n")[0]).error, /^No credentials found\./);
+});
+
+test("CLI rejects an OAuth client file from --credentials and GOOGLE_APPLICATION_CREDENTIALS", () => {
+  const file = writeTempJson({ installed: { client_id: "id", client_secret: "secret" } });
+  for (const res of [
+    runCli(["sites", "--credentials", file]),
+    runCli(["sites"], { GOOGLE_APPLICATION_CREDENTIALS: file }),
+  ]) {
+    assert.equal(res.status, 1);
+    assert.match(JSON.parse(res.stderr.trim().split("\n")[0]).error, /is an OAuth client file, not a service account key/);
+  }
 });

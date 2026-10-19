@@ -99,7 +99,7 @@ The service account needs permission on each Search Console property. You must b
 5. Enter the service account email. Copy it from the `client_email` field in your key file, e.g. `my-sa@my-project.iam.gserviceaccount.com`.
 6. Choose a permission level. Do not choose **Owner**.
    - **Restricted** (read-only): can use `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`, `inspect-batch`
-   - **Full**: can also use `site-remove`, `sitemap-submit`, `sitemap-delete`
+   - **Full**: can also use `site-add`, `site-remove`, `sitemap-submit`, `sitemap-delete`
 7. Click **Add**.
 
 Repeat for each property. Search Console has no option to add a user to all properties at once.
@@ -112,7 +112,7 @@ If Search Console shows "Email not found", see [Troubleshooting](#troubleshootin
 google-search-console-cli sites
 ```
 
-The command prints the properties that the credentials can access. If it prints `[]`, the access from Step 4 is not active yet. The CLI also writes a hint to stderr in this case. See [Troubleshooting](#troubleshooting).
+The command prints the properties that the credentials can access. If it prints `[]`, the access from Step 4 is not active yet. The CLI also writes a warning to stderr in this case. See [Troubleshooting](#troubleshooting).
 
 ## Alternative: Application Default Credentials
 
@@ -122,7 +122,7 @@ Before you start:
 
 - Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install).
 - In the project from Step 1, configure the [OAuth consent screen](https://console.cloud.google.com/auth/branding). If you are not in a Google Workspace organization, choose the **External** audience.
-- Add your own Google account as a test user on the [Audience](https://console.cloud.google.com/auth/audience) page.
+- With the **External** audience, add your own Google account as a test user on the [Audience](https://console.cloud.google.com/auth/audience) page.
 
 Steps:
 
@@ -150,7 +150,7 @@ Notes:
 - gcloud requires the `cloud-platform` scope. For write commands (`site-add`, `sitemap-submit`, etc.), use `https://www.googleapis.com/auth/webmasters` instead of `webmasters.readonly`.
 - Without `--client-id-file`, gcloud uses its own OAuth client. Google usually blocks that client for the Search Console scope and shows "This app is blocked".
 - The CLI uses Application Default Credentials only when it finds no key file (see the order in Step 3). Unset `GOOGLE_APPLICATION_CREDENTIALS`, and remove or rename `~/.config/google-search-console-cli/credentials.json` if it exists.
-- While the OAuth app's publishing status is **Testing**, Google expires the refresh token after 7 days ([Google docs](https://developers.google.com/identity/protocols/oauth2)). Run the login command again every 7 days.
+- While the OAuth app uses the **External** audience and its publishing status is **Testing**, Google expires the refresh token after 7 days ([Google docs](https://developers.google.com/identity/protocols/oauth2)). Run the login command again every 7 days.
 - This method is good for local development. For automation, use a service account.
 
 ## Troubleshooting
@@ -159,13 +159,13 @@ Notes:
 |---------|-------|-----|
 | Search Console shows "Email not found" when you add the service account | You entered a different value, such as `client_id` or an OAuth client ID. | Enter the `client_email` value from the key file. It ends in `.iam.gserviceaccount.com`. Make sure the service account is enabled in the Cloud Console. |
 | Search Console shows "Email not found" for the correct `client_email` | This is a known Google-side problem. Search Console can reject a new service account for several hours to several weeks ([forum thread](https://discuss.google.dev/t/problem-with-new-service-accounts/362176)). The CLI cannot fix it. | Try again later. To start now, use [Application Default Credentials](#alternative-application-default-credentials). |
-| `sites` prints `[]` | The credentials work, but they have no access to any property yet. | Do [Step 4](#step-4-grant-access-in-search-console) for each property. Check that you added the same `client_email` that is in your key file. With Application Default Credentials, check that your Google account has access to the property. |
+| `sites` prints `[]` (stderr has a `warning`) | The credentials work, but they have no access to any property yet. | Do [Step 4](#step-4-grant-access-in-search-console) for each property. Check that you added the same `client_email` that is in your key file. With Application Default Credentials, check that your Google account has access to the property. |
 | `{"error": "No credentials found. ..."}` | The CLI found no key file and no Application Default Credentials. | Place the key file as described in [Step 3](#step-3-place-the-credentials-file). |
 | `... is an OAuth client file, not a service account key` | The credentials file is an OAuth client file. It has an `installed` or `web` field. | Download a service account key from the **Keys** tab ([Step 2](#step-2-create-a-service-account-and-download-a-json-key)). Or use the OAuth client file with `gcloud --client-id-file` ([Application Default Credentials](#alternative-application-default-credentials)). |
 | 403 with `SERVICE_DISABLED` or "has not been used in project" | The Search Console API is not enabled in the project of the credentials (or the quota project for Application Default Credentials). | [Enable the API](https://console.cloud.google.com/apis/library/searchconsole.googleapis.com) in that project. Wait a few minutes, then try again. |
 | 403 "User does not have sufficient permission for site" | The credentials have no access to this property, or only **Restricted** access for a write command. | Add the account to the property ([Step 4](#step-4-grant-access-in-search-console)). Use **Full** for write commands. Check that the site URL matches the property exactly, e.g. `https://www.example.com/` or `sc-domain:example.com`. |
 | Google shows "This app is blocked" during `gcloud auth application-default login` | gcloud's own OAuth client cannot request the Search Console scope. | Create your own OAuth client and add `--client-id-file` ([Application Default Credentials](#alternative-application-default-credentials)). |
-| Application Default Credentials stop working after 7 days (`invalid_grant`) | The OAuth app is in **Testing** status. Google expires its refresh tokens after 7 days. | Run `gcloud auth application-default login` again with the same flags. |
+| Application Default Credentials stop working after 7 days (`invalid_grant`) | The OAuth app uses the **External** audience and is in **Testing** status. Google expires its refresh tokens after 7 days. | Run `gcloud auth application-default login` again with the same flags. |
 
 ## Usage
 
@@ -335,6 +335,8 @@ Errors are written to stderr as JSON with an `error` field. For Google API error
 ```json
 {"error": "Permission denied", "code": 403}
 ```
+
+Warnings are written to stderr as JSON with a `warning` field. They do not change stdout or the exit code. For example, `sites` writes a warning when it finds no sites.
 
 ## Related
 

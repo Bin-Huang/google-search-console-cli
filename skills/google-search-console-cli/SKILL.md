@@ -40,9 +40,9 @@ Before running any command, run `google-search-console-cli sites` to check the c
    3. `~/.config/google-search-console-cli/credentials.json`
    4. gcloud Application Default Credentials
 4. **Grant access in Search Console.** A property **Owner** opens Settings > Users and permissions > Add user, enters the key file's `client_email`, and chooses **Full** or **Restricted** (not Owner). Repeat for each property.
-5. **Verify.** Run `google-search-console-cli sites`. `[]` means the access from step 4 is not active yet. The CLI also writes a hint to stderr.
+5. **Verify.** Run `google-search-console-cli sites`. `[]` means the access from step 4 is not active yet. The CLI also writes a JSON `warning` to stderr.
 
-**Alternative: Application Default Credentials** (sign in with the user's own Google account). The user installs gcloud, configures the OAuth consent screen, adds their own account as a test user, and creates a **Desktop app** OAuth client. Then:
+**Alternative: Application Default Credentials** (sign in with the user's own Google account). The user installs gcloud, configures the OAuth consent screen, adds their own account as a test user (External audience), and creates a **Desktop app** OAuth client. Then:
 
 ```bash
 gcloud auth application-default login \
@@ -51,7 +51,7 @@ gcloud auth application-default login \
 gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 ```
 
-The CLI uses these credentials only when no key file is found. While the OAuth app is in **Testing** status, the user must run the login command again every 7 days.
+The CLI uses these credentials only when no key file is found. While the OAuth app uses the External audience and is in **Testing** status, the user must run the login command again every 7 days.
 
 ## Site URL formats
 
@@ -121,7 +121,7 @@ google-search-console-cli sites
 # Get info about a specific site
 google-search-console-cli site <siteUrl>
 
-# Add a site (stays unverified, gives no data access)
+# Add a site (requires Full permission; the site stays unverified)
 google-search-console-cli site-add <siteUrl>
 
 # Remove a site (requires Full permission)
@@ -513,7 +513,7 @@ google-search-console-cli sitemap https://www.example.com/ https://www.example.c
 ## Permission levels
 
 - **Read-only (Restricted)**: `sites`, `site`, `query`, `sitemaps`, `sitemap`, `inspect`, `inspect-batch`
-- **Write (Full)**: `site-remove`, `sitemap-submit`, `sitemap-delete`
+- **Write (Full)**: `site-add`, `site-remove`, `sitemap-submit`, `sitemap-delete`
 
 `site-add` adds the site to the account in an unverified state. It does not give access to the site's data.
 
@@ -524,13 +524,13 @@ Most analysis workflows only need read-only permission.
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Search Console shows "Email not found" for the correct `client_email` | Known Google-side delay for new service accounts: several hours to several weeks (https://discuss.google.dev/t/problem-with-new-service-accounts/362176). The CLI cannot fix it. | Try again later, or switch to Application Default Credentials. First check that the user entered `client_email` (ends in `.iam.gserviceaccount.com`), not `client_id`. |
-| `sites` prints `[]` | The credentials work, but have no access to any property yet. | Do setup step 4 for each property, with the same `client_email` as in the key file. |
+| `sites` prints `[]` (stderr has a `warning`) | The credentials work, but have no access to any property yet. | Do setup step 4 for each property, with the same `client_email` as in the key file. |
 | `No credentials found` | No key file and no Application Default Credentials. | Do setup step 3. |
 | `is an OAuth client file, not a service account key` | The file has an `installed` or `web` field. | Download a service account key, or use the file with `gcloud --client-id-file`. |
-| 403 with `SERVICE_DISABLED` or "has not been used in project" | The Search Console API is not enabled in the project of the credentials. | Enable the API (setup step 1), wait a few minutes, retry. |
+| 403 with `SERVICE_DISABLED` or "has not been used in project" | The Search Console API is not enabled in the project of the credentials (or the quota project for Application Default Credentials). | Enable the API (setup step 1), wait a few minutes, retry. |
 | 403 "User does not have sufficient permission for site" | No access to this property, or **Restricted** access for a write command. | Add the account to the property with the right level. Check that the site URL matches the property exactly. |
 | "This app is blocked" during gcloud login | gcloud's own OAuth client cannot request the Search Console scope. | Add `--client-id-file` with the user's own OAuth client. |
-| Application Default Credentials fail after 7 days (`invalid_grant`) | OAuth app in **Testing** status. | Run the gcloud login command again. |
+| Application Default Credentials fail after 7 days (`invalid_grant`) | OAuth app with the External audience in **Testing** status. | Run the gcloud login command again. |
 | Empty `query` results | Data is usually available 2-3 days after the date, or the site URL format does not match the property. | Move the date range back, and use the exact property URL. |
 | 400 Bad request | Invalid dimension filter JSON or incompatible fields. | Check the `--dimension-filter` syntax and field compatibility. |
 
