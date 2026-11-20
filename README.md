@@ -153,6 +153,42 @@ Notes:
 - While the OAuth app uses the **External** audience and its publishing status is **Testing**, Google expires the refresh token after 7 days ([Google docs](https://developers.google.com/identity/protocols/oauth2)). Run the login command again every 7 days.
 - This method is good for local development. For automation, use a service account.
 
+## Service account impersonation (keyless)
+
+Use `--impersonate-service-account` to access Search Console as a target service account
+without downloading its private key:
+
+```bash
+google-search-console-cli \
+  --impersonate-service-account=search-console@YOUR_PROJECT.iam.gserviceaccount.com \
+  sites
+```
+
+The existing credential selection order is unchanged. With no selected credential file,
+Application Default Credentials supply the source identity, including the attached service
+account on Google Cloud compute. If `--credentials`, `GOOGLE_APPLICATION_CREDENTIALS`, or
+the default credentials file selects another identity, that identity becomes the source.
+
+Prerequisites:
+
+- Enable the IAM Service Account Credentials API in the target service account's project.
+- Grant the source identity `roles/iam.serviceAccountTokenCreator` on the target account,
+  not on the entire project.
+- Add the **target** account to the intended Search Console property. Restricted permission
+  supports reporting; Full permission is needed for sitemap writes. Ownership is not needed.
+- Source credentials must authorize IAM Credentials calls with the `cloud-platform` scope.
+  Existing user ADC may require renewed consent; attached compute credentials must have an
+  appropriate access scope.
+
+The CLI requests one-hour impersonated tokens and the Google auth library refreshes them
+automatically. Read commands request `webmasters.readonly`; write commands request
+`webmasters`. Impersonation failures are reported without falling back to direct source
+identity access. No target service-account key is required. The implementation uses the
+Google auth library already used by the Google API client.
+
+Start with `sites` to verify the property's visibility. Successful impersonation alone does
+not establish Search Console access. Omitting the option preserves existing behavior.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

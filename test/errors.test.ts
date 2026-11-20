@@ -97,6 +97,13 @@ test("CLI without credentials explains where to put them", () => {
   assert.match(JSON.parse(res.stderr.trim().split("\n")[0]).error, /^No credentials found\./);
 });
 
+test("CLI accepts impersonation with a command and reports missing source credentials", () => {
+  const res = runCli(["--impersonate-service-account", "target@example.iam.gserviceaccount.com", "sites"]);
+  assert.equal(res.status, 1);
+  assert.equal(res.stdout, "");
+  assert.match(JSON.parse(res.stderr.trim().split("\n")[0]).error, /^No credentials found\./);
+});
+
 test("CLI rejects an OAuth client file from --credentials and GOOGLE_APPLICATION_CREDENTIALS", () => {
   const file = writeTempJson({ installed: { client_id: "id", client_secret: "secret" } });
   for (const res of [

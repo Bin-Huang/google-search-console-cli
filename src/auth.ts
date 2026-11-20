@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { Impersonated } from "google-auth-library";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
@@ -17,6 +18,11 @@ const DEFAULT_CREDENTIALS_PATH = path.join(
 );
 
 let credentialsPath: string | undefined;
+let impersonationTarget: string | undefined;
+
+export function setImpersonationTarget(target: string | undefined): void {
+  impersonationTarget = target;
+}
 
 export function setCredentialsPath(p: string): void {
   credentialsPath = p;
@@ -53,13 +59,23 @@ export function assertNotOAuthClientFile(file: string | undefined): void {
   }
 }
 
-function getAuthClient(scope: string) {
+async function getAuthClient(scope: string) {
   const keyFile = resolveKeyFile();
   assertNotOAuthClientFile(keyFile ?? process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
-  return new google.auth.GoogleAuth({
+  const auth = new google.auth.GoogleAuth({
     keyFile,
-    scopes: [scope],
+    scopes: [impersonationTarget
+      ? "https://www.googleapis.com/auth/cloud-platform"
+      : scope],
+  });
+  if (!impersonationTarget) return auth;
+
+  return new Impersonated({
+    sourceClient: await auth.getClient(),
+    targetPrincipal: impersonationTarget,
+    targetScopes: [scope],
+    lifetime: 3600,
   });
 }
 
@@ -67,16 +83,16 @@ const READ_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const WRITE_SCOPE = "https://www.googleapis.com/auth/webmasters";
 
 export async function createSearchConsoleClient() {
-  const auth = getAuthClient(READ_SCOPE);
+  const auth = await getAuthClient(READ_SCOPE);
   return google.searchconsole({ version: "v1", auth });
 }
 
 export async function createWebmastersClient() {
-  const auth = getAuthClient(READ_SCOPE);
+  const auth = await getAuthClient(READ_SCOPE);
   return google.webmasters({ version: "v3", auth });
 }
 
 export async function createWriteWebmastersClient() {
-  const auth = getAuthClient(WRITE_SCOPE);
+  const auth = await getAuthClient(WRITE_SCOPE);
   return google.webmasters({ version: "v3", auth });
 }
