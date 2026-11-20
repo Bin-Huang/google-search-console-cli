@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command, CommanderError } from "commander";
-import { setCredentialsPath, version } from "./auth.js";
+import { setCredentialsPath, setImpersonationTarget, version } from "./auth.js";
 import { registerSitesCommands } from "./commands/sites.js";
 import { registerSitemapsCommands } from "./commands/sitemaps.js";
 import { registerQueryCommands } from "./commands/query.js";
@@ -30,6 +30,10 @@ async function main() {
     .option(
       "--credentials <path>",
       "Path to service account JSON key file",
+    )
+    .option(
+      "--impersonate-service-account <email>",
+      "Impersonate a service account using the selected source credentials",
     );
 
   program.exitOverride();
@@ -40,8 +44,9 @@ async function main() {
   });
 
   program.hook("preAction", (thisCommand) => {
-    const { credentials } = thisCommand.optsWithGlobals();
+    const { credentials, impersonateServiceAccount } = thisCommand.optsWithGlobals();
     if (credentials) setCredentialsPath(credentials);
+    setImpersonationTarget(impersonateServiceAccount);
   });
 
   registerQueryCommands(program);
